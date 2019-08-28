@@ -1,0 +1,3 @@
+numpy
+keras_applications
+keras_preprocessing

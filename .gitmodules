@@ -1,0 +1,6 @@
+[submodule "tensorflow/contrib/persona/kernels/bwa-align/bwa"]
+	path = tensorflow/contrib/persona/kernels/bwa-align/bwa
+	url = https://github.com/epfl-vlsc/bwa.git
+[submodule "tensorflow/contrib/persona/kernels/snap-align/snap"]
+	path = tensorflow/contrib/persona/kernels/snap-align/snap
+	url = https://github.com/epfl-vlsc/snap.git

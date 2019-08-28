@@ -1,0 +1,29 @@
+* PTF System 
+** Repository contents
+   - This contains the TensorFlow-based components for PTF and Persona (the components necessary for [[https://github.com/epfl-dcsl/ptf-persona][this application]] to work).
+   - ~tensorflow/contrib/gate~ contains the code for the PTF components.
+   - ~tensorflow/contrib/persona~ contains the Persona-components.
+   - The rest of the code is standard TensorFlow, with some additions for building / compiling we added for our own convenience.
+** [[https://arxiv.org/abs/1908.09291][Arxiv submission of PTF work]]
+   - This is a paper describing the architectural details of this repository's work and contributions.
+   - To get a full picture of this work, check this paper out in addition to the [[https://github.com/epfl-dcsl/ptf-persona][application below that uses this repository]].
+* Building PTF Persona System
+  - The easiest way to do this is in Docker container.
+  - In order to replicate the steps outside of the Docker container, you may do the steps in the Dockerfile manually.
+  #+begin_src sh
+  ./build_container.sh
+  #+end_src
+  - This builds the container with a specific name that is needed by PTF Persona (the Python application).
+** Using Docker for /only/ building
+   - It is possible to just use only the final wheel file built in the Docker container and merely copy that out.
+   - To do so, it is recommended that you adjust the base image (Ubuntu Bionic by default) to whatever image of Ubuntu you want to use for binary compatibility. You should do this for /both/ the build and run images.
+   - Modify the Dockerfile to remove the second non-build image (the ~executor~ one).
+   - Make sure your base system has all the packages listed in ~RUNDEPS~ in the ~executor~ image environment variable.
+   - Also make sure you do the ~pip3~ install step too so that you have all of the dependencies.
+   - Then run the following command to get the wheel file out of the build image.
+   #+begin_src sh
+   docker run --rm -it -v "$(pwd)":/host ptf-system "cp /ptf/pip_pkg/*.whl /host"
+   #+end_src
+   You can adjust the mount to copy the wheel file to another location.
+* Accompanying PTF Persona Application
+** [[https://github.com/epfl-dcsl/ptf-persona][Link to Python-based application that uses this repository]]

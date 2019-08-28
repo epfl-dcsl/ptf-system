@@ -1,0 +1,67 @@
+# Copyright 2019 École Polytechnique Fédérale de Lausanne. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+#!/usr/bin/env python3
+
+import argparse
+import os
+import subprocess
+import shlex
+import sys
+import itertools
+import tempfile
+
+script_dir = os.path.dirname(__file__)
+project_root = os.path.join(script_dir, "/".join(itertools.repeat("..", 5)))
+
+def get_args():
+    parser = argparse.ArgumentParser(description="Build the full python image, with our package installed",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-d", "--docker-org", help="the docker dub org for which to make this image. defaults to private local image")
+    parser.add_argument("-f", "--file", default=os.path.join(script_dir, "persona_full.docker"), help="if specified, override the default Dockerfile")
+    parser.add_argument("-i", "--image", default="epflpersona/build", help="the docker image to use for building the pip package")
+    parser.add_argument("-n", "--name", default="persona_full", help="the name of this image, used to tag")
+    args = parser.parse_args()
+    if not (os.path.exists(args.file) and os.path.isfile(args.file)):
+        parser.error("docker file {} doesn't exist or isn't a file".format(args.file))
+    return args
+
+def build_pip_package(pip_dir, docker_image):
+    run_script = """docker run --rm --entrypoint tensorflow/tools/build_pip_pkg.sh -v {tf_dir}:/workspace -v {pip_dir}:/pip_dir -w /workspace {img_name} /pip_dir """.format(
+            tf_dir=os.path.abspath(project_root), pip_dir=os.path.abspath(pip_dir), img_name=docker_image
+        )
+    subprocess.run(shlex.split(run_script), check=True, stdout=sys.stdout, stderr=sys.stderr)
+
+def install_pip_package(pip_dir, docker_org, name, docker_file):
+    wheel_file = [f for f in os.listdir(pip_dir) if f.endswith(".whl")]
+    assert len(wheel_file) == 1
+    wheel_file = os.path.join(pip_dir, wheel_file[0])
+    if docker_org is None:
+        name = name
+    else:
+        name = "/".join((docker_org, name))
+    subprocess.run(shlex.split(
+        "docker build --build-arg pip_source={wheel_file} -t {name} -f {docker_file} {run_dir}".format(
+            wheel_file=wheel_file, name=name, docker_file=docker_file, run_dir=script_dir
+        )
+    ), check=True, stdout=sys.stdout, stderr=sys.stderr)
+
+def run(args):
+    with tempfile.TemporaryDirectory(dir="" if script_dir == "." else script_dir) as pip_dir:
+        build_pip_package(pip_dir=pip_dir, docker_image=args.image)
+        install_pip_package(pip_dir=pip_dir, docker_org=args.docker_org,
+                            name=args.name, docker_file=args.file)
+
+if __name__ == "__main__":
+    run(get_args())
